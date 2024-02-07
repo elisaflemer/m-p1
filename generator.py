@@ -38,4 +38,4 @@ with open("data.csv", "w", newline="") as csvfile:
         valor = generate_mock_sensor_value(min_valor, max_valor, resolucao)
         writer.writerow([valor])
 
-print(f"Arquivo 'leituras_solar.csv' gerado com sucesso.")
+print(f"Arquivo 'data.csv' gerado com sucesso.")

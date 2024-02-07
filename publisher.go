@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"time"
-	"math"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
@@ -35,7 +35,6 @@ func main() {
 		return
 	}
 
-	// Extract command-line arguments
 	configPath := os.Args[1]
 	csvPath := os.Args[2]
 
@@ -44,66 +43,94 @@ func main() {
 		panic(err)
 	}
 
+	client := connectMQTT("publisher")
+	defer client.Disconnect(250)
+
+	data, err := readCSV(csvPath)
+	if err != nil {
+		panic(err)
+	}
+
+	publishData(client, config, data)
+}
+
+func connectMQTT(node_name string) MQTT.Client {
 	opts := MQTT.NewClientOptions().AddBroker("tcp://localhost:1891")
-	opts.SetClientID("go_publisher")
+	opts.SetClientID(node_name)
 	client := MQTT.NewClient(opts)
+
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
+	return client
+}
+
+func readCSV(csvPath string) ([]float64, error) {
 	file, err := os.Open(csvPath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer file.Close()
 
-	interval := time.Second / time.Duration(config.TransmissionRate)
-
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
+	var values []float64
 	scanner := bufio.NewScanner(file)
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		var value float64
 		_, err := fmt.Sscanf(line, "%f", &value)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
-		roundedValue := math.Round(value*100)/100
-
-		// Create a JSON message with timestamp
-		data := Data{
-			Value:            roundedValue,
-			Unit:             config.Unit,
-			TransmissionRate: config.TransmissionRate,
-			Longitude:        config.Longitude,
-			Latitude:         config.Latitude,
-			Sensor:           config.Sensor,
-			Timestamp:        time.Now(),
-		}
-		jsonMsg, err := json.Marshal(data)
-		if err != nil {
-			panic(err)
-		}
-
-		// Publish the JSON message
-		token := client.Publish("sensor/" + config.Sensor, 0, false, jsonMsg)
-		token.Wait()
-		fmt.Println("Published:", string(jsonMsg))
-
-		// Wait for the next tick
-		<-ticker.C
+		values = append(values, value)
 	}
 
 	if err := scanner.Err(); err != nil {
-		panic(err)
+		return nil, err
+	}
+
+	return values, nil
+}
+
+func publishData(client MQTT.Client, config Configuration, data []float64) {
+	interval := time.Second / time.Duration(config.TransmissionRate)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for _, value := range data {
+		roundedValue := math.Round(value*100) / 100
+
+		message := createJSONMessage(config, roundedValue)
+
+		token := client.Publish("sensor/"+config.Sensor, 0, false, message)
+		token.Wait()
+
+		<-ticker.C
 	}
 }
 
-// Read configuration from config.json
+func createJSONMessage(config Configuration, roundedValue float64) []byte {
+	data := Data{
+		Value:            roundedValue,
+		Unit:             config.Unit,
+		TransmissionRate: config.TransmissionRate,
+		Longitude:        config.Longitude,
+		Latitude:         config.Latitude,
+		Sensor:           config.Sensor,
+		Timestamp:        time.Now(),
+	}
+
+	jsonMsg, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+
+	return jsonMsg
+}
+
 func readConfig(filename string) (Configuration, error) {
 	file, err := os.Open(filename)
 	if err != nil {

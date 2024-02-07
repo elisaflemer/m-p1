@@ -1,0 +1,7 @@
+{
+    "sensor": "air",
+    "longitude": 55.0,
+    "latitude": 55.0,
+    "transmission_rate_hz": 500,
+    "unit": "W/m²"
+}

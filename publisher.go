@@ -30,8 +30,16 @@ type Data struct {
 }
 
 func main() {
-	// Read configuration from config.json
-	config, err := readConfig("config.json")
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: go run publisher.go <config_path> <csv_path>")
+		return
+	}
+
+	// Extract command-line arguments
+	configPath := os.Args[1]
+	csvPath := os.Args[2]
+
+	config, err := readConfig(configPath)
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +51,7 @@ func main() {
 		panic(token.Error())
 	}
 
-	file, err := os.Open("leituras_solar.csv")
+	file, err := os.Open(csvPath)
 	if err != nil {
 		panic(err)
 	}

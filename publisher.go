@@ -57,12 +57,8 @@ func main() {
 	}
 	defer file.Close()
 
-	
-
-	// Calculate the time interval based on the transmission rate
 	interval := time.Second / time.Duration(config.TransmissionRate)
 
-	// Create a ticker to trigger data publication at regular intervals
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -70,8 +66,6 @@ func main() {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Process the line and extract the value
-		// For simplicity, let's assume the value is the first field in each line
 		var value float64
 		_, err := fmt.Sscanf(line, "%f", &value)
 		if err != nil {
@@ -96,7 +90,7 @@ func main() {
 		}
 
 		// Publish the JSON message
-		token := client.Publish("test/topic", 0, false, jsonMsg)
+		token := client.Publish("sensor/" + config.Sensor, 0, false, jsonMsg)
 		token.Wait()
 		fmt.Println("Published:", string(jsonMsg))
 

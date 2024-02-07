@@ -2,6 +2,8 @@
 
 Nesta atividade, criamos um nó publisher em MQTT para valores simulados de um sensor. Garantimos a reutilização desse código através de abstrações como um arquivo em .json para as configurações de taxa de transmissão, tipo de sensor, latitude, longitude e unidade, e também um CSV com valores simulados de um sensor. Esses arquivos são passados como argumentos na linha de comando. Já para gerar os valores do CSV, utilizamos um script "generator.py", que recebe o número de dados a serem criados, o valor mínimo, o valor máximo e a resolução também pela liha de comando.
 
+Os valores serão publicados como json com metadados no tópico "sensor/<nome-do-sensor>".
+
 ## Como rodar
 Primeiro, é necessário gerar os dados para simulação. Para isso, execute os seguintes comandos neste diretório:
 

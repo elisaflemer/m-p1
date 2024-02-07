@@ -34,3 +34,4 @@ go run publisher.go <config_path> <csv_path>
 ```
 
 ## Demo
+[demo.webm](https://github.com/elisaflemer/m-p1/assets/99259251/4328ea4a-ce58-467c-b49a-04c3e6ec1c34)

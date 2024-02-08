@@ -8,7 +8,15 @@ import (
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
-
+var mockConfig = Configuration{
+	Sensor:           "air",
+	Longitude:        59.0,
+	Latitude:         55.0,
+	TransmissionRate: 10,
+	Unit:             "W/m³",
+	QoS:			  1,
+}
+var mockData = []float64{1.25, 2.50, 1.25, 2.50, 1.25, 2.50, 0, 0, 2.50, 1.25, 2.50}
 var receivedMessages []string
 var firstMessageTimestamp time.Time
 var lastMessageTimestamp time.Time
@@ -29,30 +37,40 @@ var messagePubTestHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQT
 	lastMessageTimestamp = time.Now()
 }
 
-func TestIntegration(t *testing.T) {
+// Test to check if messages are received successfully
+
+func TestConnectMQTT(t *testing.T) {
+	client := connectMQTT("publisher")
+	defer client.Disconnect(250)
+
+	if !client.IsConnected() {
+		t.Fatalf("\x1b[31m[FAIL] Unable to connect to MQTT broker\x1b[0m")
+	} else {
+		t.Log("\x1b[32m[PASS] Connected to MQTT broker\x1b[0m")
+	}
+}
+
+func setupTest(t *testing.T) {
+	t.Helper()
+	receivedMessages = []string{}
 	client := connectMQTT("subscriber")
 	defer client.Disconnect(250)
 
-	mockConfig := Configuration{
-		Sensor:           "air",
-		Longitude:        59.0,
-		Latitude:         55.0,
-		TransmissionRate: 10,
-		Unit:             "W/m³",
-		QoS:			  1,
-	}
-
-	if token := client.Subscribe("sensor/"+mockConfig.Sensor, 1, messagePubTestHandler); token.Wait() && token.Error() != nil {
+	if token := client.Subscribe("sensor/"+mockConfig.Sensor, mockConfig.QoS, messagePubTestHandler); token.Wait() && token.Error() != nil {
 		t.Fatalf("Error subscribing to MQTT: %s", token.Error())
 	}
-
-	mockData := []float64{1.25, 2.50, 1.25, 2.50, 1.25, 2.50, 0, 0, 2.50, 1.25, 2.50}
 	publishData(client, mockConfig, mockData)
+}
 
-	// Wait for a while to ensure the subscriber has received the message
-	time.Sleep(5 * time.Second)
+func TestMessageReception(t *testing.T) {
+	setupTest(t)
 
-	// Check integrity
+	numMessages := len(mockData)
+	timePerMessage := time.Duration(int(time.Second)/int(mockConfig.TransmissionRate))
+	timeMargin := int(0.5 * float64(time.Second))
+	totalTime := time.Duration(numMessages * int(timePerMessage) + timeMargin)
+	time.Sleep(totalTime)
+
 	if len(receivedMessages) == 0 {
 		t.Fatal("\x1b[31m[FAIL] No messages received\x1b[0m")
 	} else {
@@ -64,21 +82,10 @@ func TestIntegration(t *testing.T) {
 	} else {
 		t.Log("\x1b[32m[PASS] Correct number of messages received\x1b[0m")
 	}
+}
 
-	// Check QoS
-	QoSFail := false
-	for i, qos := range receivedQoS {
-		if qos != mockConfig.QoS {
-			t.Fatalf("\x1b[31m[FAIL] Incorrect QoS in message %d. Received QoS: %d, expected: 1\x1b[0m", i, qos)
-			QoSFail = true
-			} 
-		}
-
-	if (!QoSFail) {
-		t.Log("\x1b[32m[PASS] Correct QoS received\x1b[0m")
-	}
-
-	// Decode JSON messages
+func TestMessageIntegrity(t *testing.T) {
+	setupTest(t)
 	var decodedMessages []float64
 	for _, msg := range receivedMessages {
 		var m Data
@@ -88,13 +95,15 @@ func TestIntegration(t *testing.T) {
 		decodedMessages = append(decodedMessages, m.Value)
 	}
 
-	// Check if received messages match expected values
 	if fmt.Sprintf("%v", decodedMessages) != fmt.Sprintf("%v", mockData) {
 		t.Fatalf("\x1b[31m[FAIL] Received %v, expected %v\x1b[0m", decodedMessages, mockData)
 	} else {
 		t.Log("\x1b[32m[PASS] Correct messages received\x1b[0m")
 	}
+}
 
+func TestTransmissionRate(t *testing.T) {
+	setupTest(t)
 	// Calculate time period in seconds
 	timePeriod := lastMessageTimestamp.Sub(firstMessageTimestamp).Seconds()
 
@@ -106,5 +115,20 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("\x1b[31m[FAIL] Received frequency: %f, expected: %f\x1b[0m", frequency, mockConfig.TransmissionRate)
 	} else {
 		t.Log("\x1b[32m[PASS] Transmission rate within acceptable range of 2Hz\x1b[0m")
+	}
+}
+	
+func TestQoS(t *testing.T) {
+	setupTest(t)
+	QoSFail := false
+	for i, qos := range receivedQoS {
+		if qos != mockConfig.QoS {
+			t.Fatalf("\x1b[31m[FAIL] Incorrect QoS in message %d. Received QoS: %d, expected: 1\x1b[0m", i, qos)
+			QoSFail = true
+		}
+	}
+
+	if (!QoSFail) {
+		t.Log("\x1b[32m[PASS] Correct QoS received\x1b[0m")
 	}
 }

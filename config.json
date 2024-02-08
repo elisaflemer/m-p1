@@ -2,7 +2,7 @@
     "sensor": "air",
     "longitude": 59.0,
     "latitude": 55.0,
-    "transmission_rate_hz": 10,
-    "unit": "W/m³",
+    "transmission_rate_hz": 100,
+    "unit": "W/m²",
     "QoS": 1
 }

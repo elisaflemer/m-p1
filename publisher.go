@@ -108,6 +108,7 @@ func publishData(client MQTT.Client, config Configuration, data []float64) {
 		message := createJSONMessage(config, roundedValue)
 
 		token := client.Publish("sensor/"+config.Sensor, byte(config.QoS), false, message)
+		//fmt.Fprintln(os.Stdout, "Published message:", string(message))
 		token.Wait()
 
 		<-ticker.C

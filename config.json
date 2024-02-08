@@ -3,5 +3,6 @@
     "longitude": 59.0,
     "latitude": 55.0,
     "transmission_rate_hz": 10,
-    "unit": "W/m³"
+    "unit": "W/m³",
+    "QoS": 1
 }

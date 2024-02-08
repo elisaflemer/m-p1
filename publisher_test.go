@@ -12,10 +12,14 @@ import (
 var receivedMessages []string
 var firstMessageTimestamp time.Time
 var lastMessageTimestamp time.Time
+var receivedQoS []byte
 
 var messagePubTestHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	payload := string(msg.Payload())
 	receivedMessages = append(receivedMessages, payload)
+
+	// Capture QoS
+	receivedQoS = append(receivedQoS, msg.Qos())
 
 	// Capture timestamps for the first and last messages
 	if len(receivedMessages) == 1 {
@@ -35,6 +39,7 @@ func TestIntegration(t *testing.T) {
 		Latitude:         55.0,
 		TransmissionRate: 10,
 		Unit:             "W/m³",
+		QoS:			  1,
 	}
 
 	if token := client.Subscribe("sensor/"+mockConfig.Sensor, 1, messagePubTestHandler); token.Wait() && token.Error() != nil {
@@ -58,6 +63,19 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("\x1b[31m[FAIL] Received %d messages, expected %d\x1b[0m", len(receivedMessages), len(mockData))
 	} else {
 		t.Log("\x1b[32m[PASS] Correct number of messages received\x1b[0m")
+	}
+
+	// Check QoS
+	QoSFail := false
+	for i, qos := range receivedQoS {
+		if qos != mockConfig.QoS {
+			t.Fatalf("\x1b[31m[FAIL] Incorrect QoS in message %d. Received QoS: %d, expected: 1\x1b[0m", i, qos)
+			QoSFail = true
+			} 
+		}
+
+	if (!QoSFail) {
+		t.Log("\x1b[32m[PASS] Correct QoS received\x1b[0m")
 	}
 
 	// Decode JSON messages

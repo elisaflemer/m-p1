@@ -17,6 +17,7 @@ type Configuration struct {
 	Longitude        float64 `json:"longitude"`
 	Latitude         float64 `json:"latitude"`
 	Sensor           string  `json:"sensor"`
+	QoS			     byte    `json:"qos"`
 }
 
 type Data struct {
@@ -105,7 +106,7 @@ func publishData(client MQTT.Client, config Configuration, data []float64) {
 
 		message := createJSONMessage(config, roundedValue)
 
-		token := client.Publish("sensor/"+config.Sensor, 0, false, message)
+		token := client.Publish("sensor/"+config.Sensor, byte(config.QoS), false, message)
 		token.Wait()
 
 		<-ticker.C

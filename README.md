@@ -8,7 +8,7 @@ Todas as principais funções, como conexão com o broken, integridade de mensag
 
 ## Como rodar
 
-1. Gerar dados de simulação
+### 1. Gerar dados de simulação
 
 Primeiro, é necessário gerar os dados para simulação. Para isso, execute os seguintes comandos neste diretório:
 
@@ -24,7 +24,8 @@ Isso gerará um CSV denominado "data.csv".
 
 A partir daí, podemos simular a leitura desse CSV (ou de qualquer outro). 
 
-2. Criar arquivo de configuração
+### 2. Criar arquivo de configuração
+
 Crie um arquivo de configuração JSON com informações sobre o sensor. O arquivo deve seguir o seguinte padrão:
 ```
 {
@@ -37,7 +38,7 @@ Crie um arquivo de configuração JSON com informações sobre o sensor. O arqui
 }
 ```
 
-3. Executar o Publisher MQTT
+### 3. Executar o Publisher MQTT
 
 Certifique-se de ter o mosquitto instalado com arquivo de configuração (ouvindo na porta 1891) e inicie o broker local:
 
@@ -81,10 +82,7 @@ go run publisher.go <config_path> <csv_path>
 
 O projeto inclui testes unitários para garantir a robustez e a integridade do código. Os testes são implementados usando o pacote nativo testing do Go e abrangem as seguintes áreas-chave:
 
-
-Vamos explorar detalhadamente como cada teste funciona:
-
-1. Teste TestConnectMQTT
+### 1. Conexão com broker
 
 Este teste verifica se é possível conectar-se com sucesso ao broker MQTT. Ele utiliza a função connectMQTT para estabelecer uma conexão e, em seguida, verifica se a conexão foi bem-sucedida usando client.IsConnected(). Se a conexão for estabelecida com sucesso, o teste é considerado passado; caso contrário, é considerado falho.
 
@@ -102,7 +100,8 @@ func TestConnectMQTT(t *testing.T) {
     }
 }
 ```
-2. Teste TestMessageReception
+### 2. Chegada de mensagens
+
 Este teste verifica se as mensagens são recebidas corretamente. Ele configura um ambiente de teste usando a função setupTest, que cria uma subscrição MQTT para o tópico específico e publica dados simulados. Em seguida, o teste aguarda um período de tempo que permitiria a recepção de todas as mensagens esperadas. Se nenhuma mensagem for recebida, o teste falha; caso contrário, é considerado passado. Utilizamos essa condição porque, dependendo do QoS escolhido, pode haver o recebimento de mais mensagens do que enviadas; portanto, o a comparação entre quantas mensagens foram enviadas e recebidas não é um bom critério. Em vez disso, checamos a integridade das mensagens no teste seguinte.
 
 ```go
@@ -125,7 +124,7 @@ func TestMessageReception(t *testing.T) {
 }
 ```
 
-## 3. Integridade das Mensagens
+### 3. Integridade das Mensagens
 
 O teste `TestMessageIntegrity` garante a integridade das mensagens recebidas. Ele decodifica cada mensagem recebida e verifica se cada valor em `mockData` tem pelo menos uma correspondência em `decodedMessages`. Isso garante que os valores esperados estejam presentes nas mensagens recebidas, embora não necessariamente na mesma ordem.
 
@@ -164,7 +163,8 @@ func TestMessageIntegrity(t *testing.T) {
 
 Este teste assegura que cada valor em mockData seja incluído nas mensagens recebidas, garantindo assim a integridade e a correspondência dos dados.
 
-4. Teste TestTransmissionRate
+### 4. Taxa de transmissão
+
 Este teste verifica se a taxa de transmissão das mensagens está dentro de uma faixa aceitável (default de +/- 2Hz) em relação à taxa configurada. Ele calcula o período de tempo entre a primeira e a última mensagem recebida e, com base nisso, calcula a frequência real das mensagens. Se a frequência estiver fora da faixa aceitável, o teste falha; caso contrário, é considerado passado.
 
 ```go
@@ -186,7 +186,8 @@ func TestTransmissionRate(t *testing.T) {
 
 ```
 
-5. Teste TestQoS
+### 5. QoS
+
 Este teste avalia a correta entrega de mensagens conforme configurado pelo QoS. Ele publica uma única mensagem simulada com a configuração de QoS especificada, verifica se ela foi entregue corretamente segundo seu QoS e, em seguida, relata o resultado do teste.
 
 ```go

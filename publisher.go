@@ -28,6 +28,7 @@ type Data struct {
 	Latitude         float64   `json:"latitude"`
 	Sensor           string    `json:"sensor"`
 	Timestamp        time.Time `json:"timestamp"`
+	QoS			  byte      `json:"qos"`
 }
 
 func main() {
@@ -122,6 +123,7 @@ func createJSONMessage(config Configuration, roundedValue float64) []byte {
 		Latitude:         config.Latitude,
 		Sensor:           config.Sensor,
 		Timestamp:        time.Now(),
+		QoS:			  config.QoS,
 	}
 
 	jsonMsg, err := json.Marshal(data)

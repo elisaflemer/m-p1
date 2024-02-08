@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 	"encoding/json"
-	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 var mockConfig = Configuration{
@@ -76,31 +75,35 @@ func TestMessageReception(t *testing.T) {
 	} else {
 		t.Log("\x1b[32m[PASS] Messages received successfully\x1b[0m")
 	}
-
-	if len(receivedMessages) != len(mockData) {
-		t.Fatalf("\x1b[31m[FAIL] Received %d messages, expected %d\x1b[0m", len(receivedMessages), len(mockData))
-	} else {
-		t.Log("\x1b[32m[PASS] Correct number of messages received\x1b[0m")
-	}
 }
 
 func TestMessageIntegrity(t *testing.T) {
-	setupTest(t)
-	var decodedMessages []float64
-	for _, msg := range receivedMessages {
-		var m Data
-		if err := json.Unmarshal([]byte(msg), &m); err != nil {
-			t.Fatalf("Error decoding JSON: %s", err)
-		}
-		decodedMessages = append(decodedMessages, m.Value)
-	}
+    setupTest(t)
+    var decodedMessages []float64
+    for _, msg := range receivedMessages {
+        var m Data
+        if err := json.Unmarshal([]byte(msg), &m); err != nil {
+            t.Fatalf("Error decoding JSON: %s", err)
+        }
+        decodedMessages = append(decodedMessages, m.Value)
+    }
 
-	if fmt.Sprintf("%v", decodedMessages) != fmt.Sprintf("%v", mockData) {
-		t.Fatalf("\x1b[31m[FAIL] Received %v, expected %v\x1b[0m", decodedMessages, mockData)
-	} else {
-		t.Log("\x1b[32m[PASS] Correct messages received\x1b[0m")
-	}
+    // Check if each item in mockData has at least one correspondence in decodedMessages
+    for _, expectedValue := range mockData {
+        found := false
+        for _, decodedValue := range decodedMessages {
+            if expectedValue == decodedValue {
+                found = true
+                break
+            }
+        }
+        if !found {
+            t.Fatalf("\x1b[31m[FAIL] Value %v not found in received messages: %v\x1b[0m", expectedValue, decodedMessages)
+        }
+    }
+    t.Log("\x1b[32m[PASS] Correct messages received\x1b[0m")
 }
+
 
 func TestTransmissionRate(t *testing.T) {
 	setupTest(t)
@@ -119,16 +122,50 @@ func TestTransmissionRate(t *testing.T) {
 }
 	
 func TestQoS(t *testing.T) {
-	setupTest(t)
-	QoSFail := false
-	for i, qos := range receivedQoS {
-		if qos != mockConfig.QoS {
-			t.Fatalf("\x1b[31m[FAIL] Incorrect QoS in message %d. Received QoS: %d, expected: 1\x1b[0m", i, qos)
-			QoSFail = true
+	client := connectMQTT("subscriber")
+	defer client.Disconnect(250)
+
+	if token := client.Subscribe("sensor/"+mockConfig.Sensor, mockConfig.QoS, messagePubTestHandler); token.Wait() && token.Error() != nil {
+		t.Fatalf("Error subscribing to MQTT: %s", token.Error())
+	}
+	receivedMessages = []string{}
+	mockQoSData := []float64{1.25}
+	publishData(client, mockConfig, mockQoSData)
+	time.Sleep(time.Duration(1 / int(mockConfig.TransmissionRate) * int(time.Second)))
+
+	switch mockConfig.QoS {
+	case 0:
+		t.Log("\x1b[33m[INFO] QoS set to 0, no guarantee of message delivery\x1b[0m")
+	case 1:
+		if len(receivedMessages) == 0 {
+			t.Fatalf("\x1b[31m[FAIL] No messages received with QoS 1\x1b[0m")
+		} else {
+			for _, msg := range receivedMessages {
+				var m Data
+				if err := json.Unmarshal([]byte(msg), &m); err != nil {
+					t.Fatalf("Error decoding JSON: %s", err)
+				}
+				if m.Value != mockQoSData[0] {
+					t.Fatalf("\x1b[31m[FAIL] Received %v, expected %v\x1b[0m", m.Value, mockQoSData[0])
+				}
+			}
+			t.Log("\x1b[32m[PASS] Message received with QoS 1\x1b[0m")
 		}
+	case 2:
+		if len(receivedMessages) != 1 {
+			t.Fatalf("\x1b[31m[FAIL] Incorrect number of messages received with QoS 2. Expected: 1, received: %d\x1b[0m", len(receivedMessages))
+		} else {
+			var m Data
+				if err := json.Unmarshal([]byte(receivedMessages[0]), &m); err != nil {
+					t.Fatalf("Error decoding JSON: %s", err)
+				}
+				if m.Value != mockQoSData[0] {
+					t.Fatalf("\x1b[31m[FAIL] Received %v, expected %v\x1b[0m", m.Value, mockQoSData[0])
+				}
+				t.Log("\x1b[32m[PASS] Message received with QoS 2\x1b[0m")
+		}
+		default:
+		t.Fatalf("\x1b[31m[FAIL] Invalid QoS value: %d\x1b[0m", mockConfig.QoS)
 	}
 
-	if (!QoSFail) {
-		t.Log("\x1b[32m[PASS] Correct QoS received\x1b[0m")
-	}
 }

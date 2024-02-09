@@ -1,9 +1,6 @@
 name: Run tests
 
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
   build:
@@ -14,13 +11,13 @@ jobs:
         uses: actions/checkout@v2
   
       - name: Start Mosquitto
-        uses: namoshek/mosquitto-github-action@v1.1.0
+        uses: namoshek/mosquitto-github-action@v1
         with:
           version: '1.6'
-          ports: '1891:1883'  # Setting the port to 1891
+          ports: '1883:1883 8883:8883'
           certificates: ${{ github.workspace }}/.ci/tls-certificates
           config: ${{ github.workspace }}/.ci/mosquitto.conf
-          password-file: ${{ github.workspace }}/.ci/mosquitto.passwd
+          password-file: ${{ github.workspace}}/.ci/mosquitto.passwd
           container-name: 'mqtt'
   
       - run: test

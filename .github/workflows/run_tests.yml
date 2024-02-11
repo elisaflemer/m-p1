@@ -6,7 +6,7 @@ on:
       - main  # Adjust the branch name as needed
 
 jobs:
-  test:
+  create-broker:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,6 +24,18 @@ jobs:
           ports: '1883:1883 8883:8883 1891:1891'
           config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
           container-name: 'mqtt'
+
+  run-tests:
+    needs: create-broker
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: './'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Go environment
         uses: actions/setup-go@v5

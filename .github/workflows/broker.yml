@@ -15,7 +15,7 @@ jobs:
         with:
           version: '1.6'
           ports: '1883:1883 8883:8883 1891:1891'
-          config: './mosquitto.conf'
+          config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
           container-name: 'mqtt'
   
       - run: test

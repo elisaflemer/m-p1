@@ -3,12 +3,12 @@ name: Run tests
 on: [push]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
   
       - name: Start Mosquitto
         uses: namoshek/mosquitto-github-action@v1
@@ -17,5 +17,12 @@ jobs:
           ports: '1883:1883 8883:8883 1891:1891'
           config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
           container-name: 'mqtt'
-  
-      - run: test
+
+      - name: Download go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - name: Get dependencies
+        run: go mod tidy   
+      - name: Test
+        run: go test -v --cover ${{ github.workspace }}/.github/

@@ -30,4 +30,4 @@ jobs:
       - name: Get dependencies
         run: go mod tidy   
       - name: Test
-        run: go test -v --cover ${{ github.workspace }}/.github
+        run: go test -v --cover .

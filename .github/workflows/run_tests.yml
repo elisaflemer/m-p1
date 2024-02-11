@@ -1,19 +1,22 @@
 name: Run tests
 
-on: [push]
+on:
+  push:
+    branches:
+      - main  # Adjust the branch name as needed
 
 jobs:
   test:
     runs-on: ubuntu-latest
     defaults:
-        run:
-          shell: bash
-          working-directory: './'
+      run:
+        shell: bash
+        working-directory: './'
 
     steps:
-      - name: Git checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-  
+
       - name: Start Mosquitto
         uses: namoshek/mosquitto-github-action@v1
         with:
@@ -22,12 +25,13 @@ jobs:
           config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
           container-name: 'mqtt'
 
-      - name: Download go
+      - name: Set up Go environment
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
 
       - name: Get dependencies
-        run: go mod tidy   
-      - name: Test
+        run: go mod tidy
+
+      - name: Run tests
         run: go test -v --cover .

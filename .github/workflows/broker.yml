@@ -5,6 +5,10 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+        run:
+          shell: bash
+          working-directory: './'
 
     steps:
       - name: Git checkout
@@ -22,7 +26,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
+
       - name: Get dependencies
         run: go mod tidy   
       - name: Test
-        run: go test -v --cover ${{ github.workspace }}/.github/
+        run: go test -v --cover ${{ github.workspace }}/.github

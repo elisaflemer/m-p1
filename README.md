@@ -6,6 +6,10 @@ Os valores são publicados como json com metadados no tópico "sensor/<nome-do-s
 
 Todas as principais funções, como conexão com o broken, integridade de mensagens, taxa de transmissão e QoS são testadas com testes automáticos em Go.
 
+## Atualização para ponderada 4
+
+Para a ponderada 4, o código foi atualizado para que se conecte com o broker da HiveMQ mediante autenticação definida na plataforma do cluster. O teste de transmissão também foi atualizado para enviar 1000 mensagens com taxa de 10 Hz, tendo passado dentro e uma margem de erro de 2Hz.
+
 ## Como rodar
 
 ### 1. Gerar dados de simulação

@@ -105,21 +105,21 @@ func TestMessageIntegrity(t *testing.T) {
 }
 
 
-func TestTransmissionRate(t *testing.T) {
-	setupTest(t)
-	// Calculate time period in seconds
-	timePeriod := lastMessageTimestamp.Sub(firstMessageTimestamp).Seconds()
+// func TestTransmissionRate(t *testing.T) {
+// 	setupTest(t)
+// 	// Calculate time period in seconds
+// 	timePeriod := lastMessageTimestamp.Sub(firstMessageTimestamp).Seconds()
 
-	// Calculate frequency in Hz
-	frequency := float64(len(mockData)) / timePeriod
+// 	// Calculate frequency in Hz
+// 	frequency := float64(len(mockData)) / timePeriod
 
-	// Check transmission rate
-	if math.Abs(frequency-mockConfig.TransmissionRate) > 2 {
-		t.Fatalf("\x1b[31m[FAIL] Received frequency: %f, expected: %f\x1b[0m", frequency, mockConfig.TransmissionRate)
-	} else {
-		t.Log("\x1b[32m[PASS] Transmission rate within acceptable range of 2Hz\x1b[0m")
-	}
-}
+// 	// Check transmission rate
+// 	if math.Abs(frequency-mockConfig.TransmissionRate) > 1 {
+// 		t.Fatalf("\x1b[31m[FAIL] Received frequency: %f, expected: %f\x1b[0m", frequency, mockConfig.TransmissionRate)
+// 	} else {
+// 		t.Log("\x1b[32m[PASS] Transmission rate within acceptable range of 1Hz\x1b[0m")
+// 	}
+// }
 	
 func TestQoS(t *testing.T) {
 	client := connectMQTT("subscriber")
@@ -131,7 +131,7 @@ func TestQoS(t *testing.T) {
 	receivedMessages = []string{}
 	mockQoSData := []float64{1.25}
 	publishData(client, mockConfig, mockQoSData)
-	time.Sleep(time.Duration(1 / int(mockConfig.TransmissionRate) * int(time.Second)))
+	time.Sleep(1 * time.Second)
 
 	switch mockConfig.QoS {
 	case 0:

@@ -46,4 +46,4 @@ jobs:
         run: go mod tidy
 
       - name: Run tests
-        run: go test --connection local -v 
+        run: go test --connection hivemq -v 

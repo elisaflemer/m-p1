@@ -25,9 +25,6 @@ jobs:
           config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
           container-name: 'mqtt'
 
-      - name: Print Mosquitto status
-        run: mosquitto -v
-
   run-local-tests:
     needs: create-broker
     runs-on: ubuntu-latest
@@ -40,6 +37,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check Mosquitto status
+        run: docker inspect -f '{{.State.Running}}' mqtt
+        id: mosquitto-check
+
       - name: Set up Go environment
         uses: actions/setup-go@v5
         with:
@@ -49,4 +50,10 @@ jobs:
         run: go mod tidy
       
       - name: Run local tests
-        run: go test -v -connection=local -username="${{ secrets.HIVEMQ_USERNAME }}" -password="${{ secrets.HIVEMQ_PASSWORD }}"
+        run: |
+          if [[ "${{ steps.mosquitto-check.outputs.stdout }}" == "true" ]]; then
+            go test -v -connection=local
+          else
+            echo "Mosquitto is not running."
+            exit 1
+          fi

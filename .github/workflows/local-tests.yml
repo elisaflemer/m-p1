@@ -25,6 +25,9 @@ jobs:
           config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
           container-name: 'mqtt'
 
+      - name: Print Mosquitto status
+        run: mosquitto -v
+
   run-local-tests:
     needs: create-broker
     runs-on: ubuntu-latest

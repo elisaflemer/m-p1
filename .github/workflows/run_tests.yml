@@ -45,8 +45,10 @@ jobs:
       - name: Get dependencies
         run: go mod tidy
         
-      - name: Get env
+      - name: Get username
         run:  echo "${{secrets.HIVEMQ_USERNAME }}" > .env
+      - name: GEt password
+        run:  echo "${{secrets.HIVEMQ_PASSWORD }}" > .env
       
       - name: Run tests
         run: go test --connection hivemq -v 

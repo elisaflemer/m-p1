@@ -6,8 +6,6 @@ import (
 	"time"
 	"encoding/json"
 	"flag"
-	"os"
-	"github.com/joho/godotenv"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 var mockConfig = Configuration{
@@ -24,6 +22,8 @@ var firstMessageTimestamp time.Time
 var lastMessageTimestamp time.Time
 var receivedQoS []byte
 var connectionType *string = flag.String("connection", "local", "Connection type: local or hivemq")
+var hivemqUsername = flag.String("username", "", "HiveMQ username")
+var hivemqPassword = flag.String("password", "", "HiveMQ password")
 
 var messagePubTestHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	payload := string(msg.Payload())
@@ -54,11 +54,8 @@ func getConnectionType(t *testing.T) MQTTConnector {
 }
 
 func TestConnectMQTT(t *testing.T) {
-	t.Log("Testing connection to MQTT broker")
-	godotenv.Load(".env")
-	t.Log(os.Getenv("HIVEMQ_USERNAME"), os.Getenv("HIVEMQ_PASSWORD"))
 	connector := getConnectionType(t)
-	client := connector.Connect("publisher")
+	client := connector.Connect("publisher", *hivemqUsername, *hivemqPassword)
 	defer client.Disconnect(250)
 
 	if !client.IsConnected() {
@@ -72,7 +69,7 @@ func setupTest(t *testing.T) {
 	t.Helper()
 	receivedMessages = []string{}
 	connector := getConnectionType(t)
-	client := connector.Connect("subscriber")
+	client := connector.Connect("subscriber", *hivemqUsername, *hivemqPassword)
 	defer client.Disconnect(250)
 
 	if token := client.Subscribe("sensor/"+mockConfig.Sensor, mockConfig.QoS, messagePubTestHandler); token.Wait() && token.Error() != nil {
@@ -146,7 +143,7 @@ func TestTransmissionRate(t *testing.T) {
 	
 func TestQoS(t *testing.T) {
 	connector := getConnectionType(t)
-	client := connector.Connect("subscriber")
+	client := connector.Connect("subscriber", *hivemqUsername, *hivemqPassword)
 	defer client.Disconnect(250)
 
 	if token := client.Subscribe("sensor/"+mockConfig.Sensor, mockConfig.QoS, messagePubTestHandler); token.Wait() && token.Error() != nil {

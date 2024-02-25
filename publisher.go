@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 	"flag"
-	"github.com/joho/godotenv"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
+
 
 type Configuration struct {
 	Unit             string  `json:"unit"`
@@ -34,12 +34,12 @@ type Data struct {
 }
 
 type MQTTConnector interface {
-	Connect(nodeName string) MQTT.Client
+	Connect(nodeName string, username string, password string) MQTT.Client
 }
 
 type LocalMQTTConnector struct{}
 
-func (l *LocalMQTTConnector) Connect(nodeName string) MQTT.Client {
+func (l *LocalMQTTConnector) Connect(nodeName string, username string, password string) MQTT.Client {
 	opts := MQTT.NewClientOptions().AddBroker("tcp://localhost:1891")
 	opts.SetClientID(nodeName)
 	client := MQTT.NewClient(opts)
@@ -53,17 +53,11 @@ func (l *LocalMQTTConnector) Connect(nodeName string) MQTT.Client {
 
 type HiveMQConnector struct{}
 
-func (h *HiveMQConnector) Connect(nodeName string) MQTT.Client {
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println("Error loading .env file")
-	}
+func (h *HiveMQConnector) Connect(nodeName string, username string, password string) MQTT.Client {
 	opts := MQTT.NewClientOptions().AddBroker("tls://b9f3c31144f64d469f184727678d8fb6.s1.eu.hivemq.cloud:8883/mqtt")
 	opts.SetClientID(nodeName)
-	username := os.Getenv("HIVEMQ_USERNAME")
-	password := os.Getenv("HIVEMQ_PASSWORD")
-	opts.SetUsername(username)
-	opts.SetPassword(password)
+	opts.SetUsername(*hivemqUsername)
+	opts.SetPassword(*hivemqPassword)
 	client := MQTT.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -77,6 +71,8 @@ func main() {
 	configPath := flag.String("config", "", "Path to the configuration file")
 	csvPath := flag.String("csv", "", "Path to the CSV file")
 	connection := flag.String("connection", "hivemq", "Enter 'hivemq' or 'local' for MQTT connection")
+	hivemqUsername := flag.String("username", "", "HiveMQ username")
+	hivemqPassword := flag.String("password", "", "HiveMQ password")
 
 	flag.Parse()
 
@@ -101,7 +97,7 @@ func main() {
 		return	
 	}
 
-	client := connector.Connect("publisher")
+	client := connector.Connect("publisher", *hivemqUsername, *hivemqPassword)
 	defer client.Disconnect(250)
 
 	data, err := readCSV(*csvPath)

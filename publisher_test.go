@@ -55,7 +55,7 @@ func getConnectionType(t *testing.T) MQTTConnector {
 
 func TestConnectMQTT(t *testing.T) {
 
-	err := godotenv.Load(".env")
+	godotenv.Load(".env")
 	t.Log(os.Getenv("HIVEMQ_USERNAME"), os.Getenv("HIVEMQ_PASSWORD"))
 	connector := getConnectionType(t)
 	client := connector.Connect("publisher")

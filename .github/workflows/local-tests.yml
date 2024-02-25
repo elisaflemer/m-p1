@@ -37,6 +37,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check Mosquitto status
+        run: docker ps
+
       - name: Set up Go environment
         uses: actions/setup-go@v5
         with:

@@ -1,5 +1,4 @@
-name: Run tests
-
+name: HiveMQ tests
 on: 
   push:
     branches:

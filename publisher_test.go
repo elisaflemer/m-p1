@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 	"encoding/json"
+	"flag"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 var mockConfig = Configuration{
@@ -20,15 +21,14 @@ var receivedMessages []string
 var firstMessageTimestamp time.Time
 var lastMessageTimestamp time.Time
 var receivedQoS []byte
+var connectionType *string = flag.String("connection", "local", "Connection type: local or hivemq")
 
 var messagePubTestHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	payload := string(msg.Payload())
 	receivedMessages = append(receivedMessages, payload)
 
-	// Capture QoS
 	receivedQoS = append(receivedQoS, msg.Qos())
 
-	// Capture timestamps for the first and last messages
 	if len(receivedMessages) == 1 {
 		firstMessageTimestamp = time.Now()
 	}
@@ -36,10 +36,24 @@ var messagePubTestHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQT
 	lastMessageTimestamp = time.Now()
 }
 
-// Test to check if messages are received successfully
+func getConnectionType(t *testing.T) MQTTConnector {
+	t.Helper()
+	var connector MQTTConnector
+	if *connectionType == "local" {
+		connector = &LocalMQTTConnector{}
+	} else if *connectionType == "hivemq" {
+		connector = &HiveMQConnector{}
+	} else {
+		panic("Invalid connection type")
+	}
+
+	return connector
+
+}
 
 func TestConnectMQTT(t *testing.T) {
-	client := connectMQTT("publisher")
+	connector := getConnectionType(t)
+	client := connector.Connect("publisher")
 	defer client.Disconnect(250)
 
 	if !client.IsConnected() {
@@ -52,7 +66,8 @@ func TestConnectMQTT(t *testing.T) {
 func setupTest(t *testing.T) {
 	t.Helper()
 	receivedMessages = []string{}
-	client := connectMQTT("subscriber")
+	connector := getConnectionType(t)
+	client := connector.Connect("subscriber")
 	defer client.Disconnect(250)
 
 	if token := client.Subscribe("sensor/"+mockConfig.Sensor, mockConfig.QoS, messagePubTestHandler); token.Wait() && token.Error() != nil {
@@ -105,21 +120,24 @@ func TestMessageIntegrity(t *testing.T) {
 }
 
 
-// func TestTransmissionRate(t *testing.T) {
-// 	setupTest(t)
-// 	// Calculate time period in seconds
-// 	timePeriod := lastMessageTimestamp.Sub(firstMessageTimestamp).Seconds()
+func TestTransmissionRate(t *testing.T) {
+	if *connectionType == "hivemq" {
+		t.Skip("Skipping test for HiveMQ")
+	}
+	setupTest(t)
+	// Calculate time period in seconds
+	timePeriod := lastMessageTimestamp.Sub(firstMessageTimestamp).Seconds()
 
-// 	// Calculate frequency in Hz
-// 	frequency := float64(len(mockData)) / timePeriod
+	// Calculate frequency in Hz
+	frequency := float64(len(mockData)) / timePeriod
 
-// 	// Check transmission rate
-// 	if math.Abs(frequency-mockConfig.TransmissionRate) > 1 {
-// 		t.Fatalf("\x1b[31m[FAIL] Received frequency: %f, expected: %f\x1b[0m", frequency, mockConfig.TransmissionRate)
-// 	} else {
-// 		t.Log("\x1b[32m[PASS] Transmission rate within acceptable range of 1Hz\x1b[0m")
-// 	}
-// }
+	// Check transmission rate
+	if math.Abs(frequency-mockConfig.TransmissionRate) > 1 {
+		t.Fatalf("\x1b[31m[FAIL] Received frequency: %f, expected: %f\x1b[0m", frequency, mockConfig.TransmissionRate)
+	} else {
+		t.Log("\x1b[32m[PASS] Transmission rate within acceptable range of 1Hz\x1b[0m")
+	}
+}
 	
 func TestQoS(t *testing.T) {
 	client := connectMQTT("subscriber")

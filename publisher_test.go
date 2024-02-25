@@ -6,6 +6,7 @@ import (
 	"time"
 	"encoding/json"
 	"flag"
+	"os"
 	"github.com/joho/godotenv"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
@@ -55,9 +56,6 @@ func getConnectionType(t *testing.T) MQTTConnector {
 func TestConnectMQTT(t *testing.T) {
 
 	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println("Error loading .env file")
-	}
 	t.Log(os.Getenv("HIVEMQ_USERNAME"), os.Getenv("HIVEMQ_PASSWORD"))
 	connector := getConnectionType(t)
 	client := connector.Connect("publisher")

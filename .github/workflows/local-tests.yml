@@ -38,8 +38,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check Mosquitto status
-        run: docker inspect -f '{{.State.Running}}' mqtt
-        id: mosquitto-check
+        run: docker ps
 
       - name: Set up Go environment
         uses: actions/setup-go@v5
@@ -50,10 +49,5 @@ jobs:
         run: go mod tidy
       
       - name: Run local tests
-        run: |
-          if [[ "${{ steps.mosquitto-check.outputs.stdout }}" == "true" ]]; then
-            go test -v -connection=local
-          else
-            echo "Mosquitto is not running."
-            exit 1
-          fi
+        run: go test -connection=local -v
+

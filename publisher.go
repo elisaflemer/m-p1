@@ -7,13 +7,15 @@ import (
 	"math"
 	"os"
 	"time"
+	"flag"
+	"github.com/joho/godotenv"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
 type Configuration struct {
 	Unit             string  `json:"unit"`
-	TransmissionRate float64 `json:"transmission_rate_hz"` // in Hz
+	TransmissionRate float64 `json:"transmission_rate_hz"`
 	Longitude        float64 `json:"longitude"`
 	Latitude         float64 `json:"latitude"`
 	Sensor           string  `json:"sensor"`
@@ -31,24 +33,78 @@ type Data struct {
 	QoS			  byte      `json:"qos"`
 }
 
+type MQTTConnector interface {
+	Connect(nodeName string) MQTT.Client
+}
+
+type LocalMQTTConnector struct{}
+
+func (l *LocalMQTTConnector) Connect(nodeName string) MQTT.Client {
+	opts := MQTT.NewClientOptions().AddBroker("tcp://localhost:1891")
+	opts.SetClientID(nodeName)
+	client := MQTT.NewClient(opts)
+
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	return client
+}
+
+type HiveMQConnector struct{}
+
+func (h *HiveMQConnector) Connect(nodeName string) MQTT.Client {
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+	opts := MQTT.NewClientOptions().AddBroker("tls://b9f3c31144f64d469f184727678d8fb6.s1.eu.hivemq.cloud:8883/mqtt")
+	opts.SetClientID(nodeName)
+	username := os.Getenv("HIVEMQ_USERNAME")
+	password := os.Getenv("HIVEMQ_PASSWORD")
+	opts.SetUsername(username)
+	opts.SetPassword(password)
+	client := MQTT.NewClient(opts)
+
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	return client
+}
+
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: go run publisher.go <config_path> <csv_path>")
+	configPath := flag.String("config", "", "Path to the configuration file")
+	csvPath := flag.String("csv", "", "Path to the CSV file")
+	connection := flag.String("connection", "hivemq", "Enter 'hivemq' or 'local' for MQTT connection")
+
+	flag.Parse()
+
+	if *configPath == "" || *csvPath == "" {
+		fmt.Println("Usage: go run publisher.go -config <config_path> -csv <csv_path> -connection <hivemq/local>")
 		return
 	}
 
-	configPath := os.Args[1]
-	csvPath := os.Args[2]
-
-	config, err := readConfig(configPath)
+	config, err := readConfig(*configPath)
 	if err != nil {
 		panic(err)
 	}
 
-	client := connectMQTT("publisher")
+	var connector MQTTConnector
+
+	if *connection == "hivemq"{
+		connector = &HiveMQConnector{}
+	} else if *connection == "local" {
+		connector = &LocalMQTTConnector{}
+	} else {
+		fmt.Println("Invalid connection type. Enter 'hivemq' or 'local'")
+		return	
+	}
+
+	client := connector.Connect("publisher")
 	defer client.Disconnect(250)
 
-	data, err := readCSV(csvPath)
+	data, err := readCSV(*csvPath)
 	if err != nil {
 		panic(err)
 	}

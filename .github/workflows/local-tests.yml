@@ -24,29 +24,15 @@ jobs:
           ports: '1883:1883 8883:8883 1891:1891'
           config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
           container-name: 'mqtt'
-
-  run-tests:
-    needs: create-broker
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: './'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Check Mosquitto status
-        run: docker ps
-
+          
       - name: Set up Go environment
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
-
+          
       - name: Get dependencies
         run: go mod tidy
 
       - name: Run tests
         run: go test -v --cover .
+        

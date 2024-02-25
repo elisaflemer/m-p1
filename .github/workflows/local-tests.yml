@@ -1,6 +1,6 @@
 name: Local tests
 
-on: 
+on:
   push:
     branches:
       - main  # Adjust the branch name as needed
@@ -25,7 +25,7 @@ jobs:
           config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
           container-name: 'mqtt'
 
-  run-local-tests:
+  run-tests:
     needs: create-broker
     runs-on: ubuntu-latest
     defaults:
@@ -37,9 +37,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check Mosquitto status
-        run: docker ps
-
       - name: Set up Go environment
         uses: actions/setup-go@v5
         with:
@@ -47,7 +44,6 @@ jobs:
 
       - name: Get dependencies
         run: go mod tidy
-      
-      - name: Run local tests
-        run: go test -connection=local -v
 
+      - name: Run tests
+        run: go test -v --cover .

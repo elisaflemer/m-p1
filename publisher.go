@@ -40,7 +40,7 @@ type MQTTConnector interface {
 type LocalMQTTConnector struct{}
 
 func (l *LocalMQTTConnector) Connect(nodeName string, username string, password string) MQTT.Client {
-	opts := MQTT.NewClientOptions().AddBroker("tcp://localhost:1883")
+	opts := MQTT.NewClientOptions().AddBroker("tcp://localhost:1891")
 	opts.SetClientID(nodeName)
 	client := MQTT.NewClient(opts)
 

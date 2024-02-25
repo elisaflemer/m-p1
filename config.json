@@ -1,8 +1,8 @@
 {
-    "sensor": "air",
+    "sensor": "solar",
     "longitude": 59.0,
     "latitude": 55.0,
-    "transmission_rate_hz": 100,
+    "transmission_rate_hz": 1,
     "unit": "W/m²",
     "QoS": 1
 }

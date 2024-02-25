@@ -1,14 +1,15 @@
-# Ponderada 1, módulo 9
+# Ponderada 1-4, módulo 9
 
-Nesta atividade, criamos um nó publisher em MQTT para valores simulados de um sensor. Garantimos a reutilização desse código através de abstrações como um arquivo em .json para as configurações de taxa de transmissão, tipo de sensor, latitude, longitude e unidade, e também um CSV com valores simulados de um sensor. Esses arquivos são passados como argumentos na linha de comando. Já para gerar os valores do CSV, utilizamos um script "generator.py", que recebe o número de dados a serem criados, o valor mínimo, o valor máximo e a resolução também pela liha de comando.
 
-Os valores são publicados como json com metadados no tópico "sensor/<nome-do-sensor>".
+Nesta atividade, nosso foco foi a criação de um nó publisher em MQTT para simular valores de um sensor. O código base e o repositório foram os mesmos ao longo das etapas ponderadas 1, 2 e 4. Na primeira fase, concentramo-nos na implementação exclusiva do publisher local. Posteriormente, na segunda etapa, realizamos os testes necessários, e finalmente, na quarta etapa, estabelecemos a conexão com o HiveMQ utilizando credenciais.
 
-Todas as principais funções, como conexão com o broken, integridade de mensagens, taxa de transmissão e QoS são testadas com testes automáticos em Go.
+Durante o desenvolvimento, enfrentamos desafios notáveis, especialmente ao tentar manter o teste de taxa de transmissão na conexão com o broker na nuvem. Ocorreu um significativo delay, possivelmente atribuído ao uso da free tier. Como resposta a esse problema, promovemos uma refatoração no código base. Agora, ele incorpora o uso de flags para possibilitar a conexão dinâmica com o broker local ou HiveMQ, conforme especificado na linha de comando. Adicionalmente, introduzimos a capacidade de pular o teste de transmissão no caso de uma conexão remota.
 
-## Atualização para ponderada 4
+Ao longo desse processo, implementamos abstrações cruciais, como um arquivo em .json para configurações e um CSV contendo valores simulados do sensor. Esses arquivos são fornecidos como argumentos na linha de comando. Para gerar os valores do CSV, desenvolvemos um script denominado "generator.py", aceitando parâmetros como número de dados, valor mínimo, valor máximo e resolução.
 
-Para a ponderada 4, o código foi atualizado para que se conecte com o broker da HiveMQ mediante autenticação definida na plataforma do cluster. O teste de transmissão também foi atualizado para enviar 1000 mensagens com taxa de 10 Hz, tendo passado dentro e uma margem de erro de 2Hz.
+Os valores simulados são publicados em formato JSON, incluindo metadados, no tópico "sensor/<nome-do-sensor>".
+
+Para garantir a robustez do código, elaboramos testes automáticos em Go, cobrindo aspectos cruciais como a conexão com o broker, integridade das mensagens, taxa de transmissão e QoS. As variações entre as diferentes iterações ponderadas foram tratadas nas respectivas etapas, conforme mencionado anteriormente.
 
 ## Como rodar
 
@@ -56,10 +57,19 @@ No diretório deste projeto, instale dependências do Go:
 go mod tidy
 ```
 
-Execute o script publisher.go passando o caminho do arquivo de configuração JSON e o caminho do arquivo CSV:
+#### 3a. Criar um .env 
+Para conectar com um broker remoto, crie um arquivo .env com os seguintes valores:
 
 ```
-go run publisher.go <config_path> <csv_path>
+HIVEMQ_USERNAME=''
+HIVEMQ_PASSWORD=''
+
+```
+
+Execute o script publisher.go passando o caminho do arquivo de configuração JSON, o caminho do arquivo CSV e a conexão desejada:
+
+```
+go run publisher.go <config_path> <csv_path> <local/hivemq>
 ```
 
 ## Estrutura dos dados
@@ -92,16 +102,15 @@ Este teste verifica se é possível conectar-se com sucesso ao broker MQTT. Ele 
 
 ```go
 func TestConnectMQTT(t *testing.T) {
-    // Conectar ao broker MQTT
-    client := connectMQTT("publisher")
-    defer client.Disconnect(250)
+	connector := getConnectionType(t)
+	client := connector.Connect("publisher")
+	defer client.Disconnect(250)
 
-    // Verificar se a conexão foi estabelecida com sucesso
-    if !client.IsConnected() {
-        t.Fatalf("\x1b[31m[FAIL] Unable to connect to MQTT broker\x1b[0m")
-    } else {
-        t.Log("\x1b[32m[PASS] Connected to MQTT broker\x1b[0m")
-    }
+	if !client.IsConnected() {
+		t.Fatalf("\x1b[31m[FAIL] Unable to connect to MQTT broker\x1b[0m")
+	} else {
+		t.Log("\x1b[32m[PASS] Connected to MQTT broker\x1b[0m")
+	}
 }
 ```
 ### 2. Chegada de mensagens
@@ -247,6 +256,4 @@ func TestQoS(t *testing.T) {
 ```
 
 ## Demo
-[demo_completa.webm](https://github.com/elisaflemer/m9-p1/assets/99259251/cc8a6a14-5036-48f3-a703-de2b0408b011)
 
-![image](https://github.com/elisaflemer/m9-p1/assets/99259251/2da0ef29-135c-45f7-85fa-5e8a885eee08)

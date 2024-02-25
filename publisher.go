@@ -112,20 +112,6 @@ func main() {
 	publishData(client, config, data)
 }
 
-func connectMQTT(node_name string) MQTT.Client {
-	opts := MQTT.NewClientOptions().AddBroker("tls://b9f3c31144f64d469f184727678d8fb6.s1.eu.hivemq.cloud:8883/mqtt")
-	opts.SetClientID(node_name)
-	opts.SetPassword("Levinson1")
-	opts.SetUsername("elisa")
-	client := MQTT.NewClient(opts)
-
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-
-	return client
-}
-
 func readCSV(csvPath string) ([]float64, error) {
 	file, err := os.Open(csvPath)
 	if err != nil {

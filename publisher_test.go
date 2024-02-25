@@ -140,7 +140,8 @@ func TestTransmissionRate(t *testing.T) {
 }
 	
 func TestQoS(t *testing.T) {
-	client := connectMQTT("subscriber")
+	connector := getConnectionType(t)
+	client := connector.Connect("subscriber")
 	defer client.Disconnect(250)
 
 	if token := client.Subscribe("sensor/"+mockConfig.Sensor, mockConfig.QoS, messagePubTestHandler); token.Wait() && token.Error() != nil {

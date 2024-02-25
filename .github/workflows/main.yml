@@ -1,0 +1,49 @@
+name: Run tests
+
+on: 
+  push:
+    branches:
+      - main  # Adjust the branch name as needed
+
+jobs:
+  create-broker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: './'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start Mosquitto
+        uses: namoshek/mosquitto-github-action@v1
+        with:
+          version: '1.6'
+          ports: '1883:1883 8883:8883 1891:1891'
+          config: ${{ github.workspace }}/.github/workflows/mosquitto.conf
+          container-name: 'mqtt'
+
+  run-local-tests:
+    needs: create-broker
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: './'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Get dependencies
+        run: go mod tidy
+      
+      - name: Run local tests
+        run: go test -v -connection=local -username="${{ secrets.HIVEMQ_USERNAME }}" -password="${{ secrets.HIVEMQ_PASSWORD }}"

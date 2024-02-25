@@ -46,6 +46,7 @@ jobs:
         run: go mod tidy
         
       - name: Get env
-      - run:  echo "${{secrets.HIVEMQ_USERNAME }}" > .env
+        run:  echo "${{secrets.HIVEMQ_USERNAME }}" > .env
+      
       - name: Run tests
         run: go test --connection hivemq -v 

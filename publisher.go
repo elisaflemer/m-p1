@@ -9,6 +9,7 @@ import (
 	"time"
 	"flag"
 
+
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -56,8 +57,8 @@ type HiveMQConnector struct{}
 func (h *HiveMQConnector) Connect(nodeName string, username string, password string) MQTT.Client {
 	opts := MQTT.NewClientOptions().AddBroker("tls://b9f3c31144f64d469f184727678d8fb6.s1.eu.hivemq.cloud:8883/mqtt")
 	opts.SetClientID(nodeName)
-	opts.SetUsername(*hivemqUsername)
-	opts.SetPassword(*hivemqPassword)
+	opts.SetUsername(username)
+	opts.SetPassword(password)
 	client := MQTT.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -71,6 +72,7 @@ func main() {
 	configPath := flag.String("config", "", "Path to the configuration file")
 	csvPath := flag.String("csv", "", "Path to the CSV file")
 	connection := flag.String("connection", "hivemq", "Enter 'hivemq' or 'local' for MQTT connection")
+
 	hivemqUsername := flag.String("username", "", "HiveMQ username")
 	hivemqPassword := flag.String("password", "", "HiveMQ password")
 
@@ -148,7 +150,7 @@ func publishData(client MQTT.Client, config Configuration, data []float64) {
 		message := createJSONMessage(config, roundedValue)
 
 		token := client.Publish("sensor/"+config.Sensor, byte(config.QoS), false, message)
-		//fmt.Fprintln(os.Stdout, "Published message:", string(message))
+		fmt.Fprintln(os.Stdout, "Published message:", string(message))
 		token.Wait()
 
 		<-ticker.C

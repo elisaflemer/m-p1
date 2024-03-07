@@ -62,7 +62,7 @@ func TestConnectMQTT(t *testing.T) {
 		t.Fatalf("\x1b[31m[FAIL] Unable to connect to MQTT broker\x1b[0m")
 	} else {
 		t.Log("\x1b[32m[PASS] Connected to MQTT broker\x1b[0m")
-	}
+	}    
 }
 
 func setupTest(t *testing.T) {

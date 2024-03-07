@@ -1,0 +1,13 @@
+version: '3.3'
+services:
+    metabase:
+        volumes:
+            - ./metabase-data:/metabase.db
+            - ./ponderada.db:/ponderada.db
+        environment:
+            - MB_DB_FILE=/metabase.db/metabase.db
+        ports:
+            - 3000:3000
+#       image: metabase/metabase
+        image: metabase/metabase
+        restart: always

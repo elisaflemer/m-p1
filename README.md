@@ -1,4 +1,4 @@
-# Ponderada 1-4, módulo 9
+# Ponderada 1-5, módulo 9
 
 
 Nesta atividade, nosso foco foi a criação de um nó publisher em MQTT para simular valores de um sensor. O código base e o repositório foram os mesmos ao longo das etapas ponderadas 1, 2 e 4. Na primeira fase, concentramo-nos na implementação exclusiva do publisher local. Posteriormente, na segunda etapa, realizamos os testes necessários, e finalmente, na quarta etapa, estabelecemos a conexão com o HiveMQ utilizando credenciais.

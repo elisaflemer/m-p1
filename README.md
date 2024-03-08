@@ -345,4 +345,4 @@ func TestQoS(t *testing.T) {
 
 ### Funcionamento do dashboard
 
-[text](dashboard.webm)
+[Screencast from 2024-03-06 10-47-43.webm](https://github.com/elisaflemer/m9-p1/assets/99259251/c36280cb-7d9a-422e-b389-e8bf177a50c2)

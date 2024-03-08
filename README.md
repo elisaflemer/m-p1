@@ -1,7 +1,6 @@
 # Ponderada 1-5, módulo 9
 
-
-Nesta atividade, nosso foco foi a criação de um nó publisher em MQTT para simular valores de um sensor. O código base e o repositório foram os mesmos ao longo das etapas ponderadas 1, 2 e 4. Na primeira fase, concentramo-nos na implementação exclusiva do publisher local. Posteriormente, na segunda etapa, realizamos os testes necessários, e finalmente, na quarta etapa, estabelecemos a conexão com o HiveMQ utilizando credenciais.
+Nesta atividade, nosso foco foi a criação de um nó publisher em MQTT para simular valores de um sensor, com integração com banco de dados e visualização no Metabase. O código base e o repositório foram os mesmos ao longo das etapas ponderadas 1, 2, 4 e 5. Na primeira fase, concentramo-nos na implementação exclusiva do publisher local. Posteriormente, na segunda etapa, realizamos os testes necessários; na ponderada 4, integramos com um broker online usando credenciais e, na ponderada 5, criamos um dashboard no Metabase.
 
 Durante o desenvolvimento, enfrentamos desafios notáveis, especialmente ao tentar manter o teste de taxa de transmissão na conexão com o broker na nuvem. Ocorreu um significativo delay, possivelmente atribuído ao uso da free tier. Como resposta a esse problema, promovemos uma refatoração no código base. Agora, ele incorpora o uso de flags para possibilitar a conexão dinâmica com o broker local ou HiveMQ, conforme especificado na linha de comando. Adicionalmente, introduzimos a capacidade de pular o teste de transmissão no caso de uma conexão remota.
 
@@ -11,7 +10,62 @@ Os valores simulados são publicados em formato JSON, incluindo metadados, no t�
 
 Para garantir a robustez do código, elaboramos testes automáticos em Go, cobrindo aspectos cruciais como a conexão com o broker, integridade das mensagens, taxa de transmissão e QoS. As variações entre as diferentes iterações ponderadas foram tratadas nas respectivas etapas, conforme mencionado anteriormente.
 
-## Como rodar
+## Shortcut: rodar automaticamente
+
+Essa é a abordagem mais rápida para rodar o sistema, que executa desde o script de geração de valores até o docker compose e integração de banco de dados para visualizar o dashboard.
+
+Os comandos para rodar isso são os seguintes:
+
+```
+chmod +x run.sh
+./run.sh
+```
+
+O código em questão é este:
+
+```
+#!/bin/sh
+
+# Function to cleanup and stop all processes
+cleanup() {
+    echo "Stopping all processes..."
+    # Terminate the Docker Compose services
+    docker-compose down
+    # Terminate the Python API
+    pkill -f "python3 api.py"
+    # Terminate the Go subscriber
+    pkill -f "go run subscriber.go"
+    # Terminate the Go publisher
+    pkill -f "go run publisher.go"
+    echo "All processes stopped."
+    exit 0
+}
+
+# Trap SIGINT signal (Ctrl+C) to execute cleanup function
+trap 'cleanup' INT
+
+# Activate the virtual environment
+source env/bin/activate
+
+# Start Docker Compose services in detached mode
+docker-compose up -d
+
+# Start Python API in the background
+python3 api.py &
+
+# Start Go subscriber in the background
+go run subscriber.go -config config.json -connection hivemq -username elisa -password Elisa123 &
+
+# Start Go publisher in the background
+go run publisher.go -config config.json -csv data.csv -connection hivemq -username elisa -password Elisa123
+
+# Wait for all background processes to finish
+wait
+```
+
+Esse script inicializa a API, que conecta requisições com o banco de dados; o subscriber, que recebe os dados publicados e os envia via HTTP para a API; o publisher, que lê os dados da planilha e os publica no tópico adequado; e um container de Metabase com volumes do banco de dados acessado pela API.
+
+## Rodar manualmente
 
 ### 1. Gerar dados de simulação
 
@@ -70,6 +124,34 @@ Execute o script publisher.go passando o caminho do arquivo de configuração JS
 
 ```
 go run publisher.go <config_path> <csv_path> <local/hivemq>
+```
+
+### 4. Rodar o subscriber
+
+O subscriber é responsável por receber as mensagens publicas no tópico e redirecioná-las para a API.
+
+```
+go run subscriber.go -config config.json -connection hivemq -username elisa -password Elisa123
+
+```
+
+### 5. Iniciar a API
+
+A API em Flask coordena os updates ao banco de dados em SQLite.
+
+```
+pip install Flask
+python3 api.py
+
+```
+
+### 6. Lançar o container do Metabase
+
+Utilizamos um docker-compose para facilitar o gerenciamento de volumes.
+
+```
+docker-compose up
+
 ```
 
 ## Estrutura dos dados
@@ -257,4 +339,10 @@ func TestQoS(t *testing.T) {
 
 ## Demo
 
+### Funcionamento do publisher completo
+
 [Screencast from 2024-02-25 16-19-32.webm](https://github.com/elisaflemer/m9-p1/assets/99259251/27f54e4c-32f9-4765-8227-1f8a7165daa2)
+
+### Funcionamento do dashboard
+
+[text](dashboard.webm)

@@ -25,4 +25,4 @@ jobs:
         run: go mod tidy
       
       - name: Run tests
-        run: go test -v -connection hivemq -username elisa -password Elisa123"
+        run: go test -v -connection hivemq -username elisa -password Elisa123

@@ -4,46 +4,11 @@ import (
 	"fmt"
 	"bytes"
 	"flag"
-	"encoding/json"
-	"os"
 	"net/http"
-	"time"
 	//"github.com/go-chi/chi"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
-type Configuration struct {
-	Unit             string  `json:"unit"`
-	TransmissionRate float64 `json:"transmission_rate_hz"`
-	Longitude        float64 `json:"longitude"`
-	Latitude         float64 `json:"latitude"`
-	Sensor           string  `json:"sensor"`
-	QoS			     byte    `json:"qos"`
-}
-
-type Data struct {
-	Value            float64   `json:"value"`
-	Unit             string    `json:"unit"`
-	TransmissionRate float64   `json:"transmission_rate"`
-	Longitude        float64   `json:"longitude"`
-	Latitude         float64   `json:"latitude"`
-	Sensor           string    `json:"sensor"`
-	Timestamp        time.Time `json:"timestamp"`
-	QoS			  byte      `json:"qos"`
-}
-
-func readConfig(filename string) (Configuration, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return Configuration{}, err
-	}
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-	config := Configuration{}
-	err = decoder.Decode(&config)
-	return config, err
-}
 
 func postStructAsJSON(url string, data []byte) error {
 
@@ -70,43 +35,8 @@ var messagePubHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Me
 	postStructAsJSON("http://localhost:5000/api", msg.Payload())
 
 }
-type MQTTConnector interface {
-	Connect(nodeName string, username string, password string) MQTT.Client
-}
 
-type LocalMQTTConnector struct{}
-
-func (l *LocalMQTTConnector) Connect(nodeName string, username string, password string) MQTT.Client {
-	opts := MQTT.NewClientOptions().AddBroker("tcp://localhost:1891")
-	opts.SetClientID(nodeName)
-	opts.SetDefaultPublishHandler(messagePubHandler)
-	client := MQTT.NewClient(opts)
-	
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-
-	return client
-}
-
-type HiveMQConnector struct{}
-
-func (h *HiveMQConnector) Connect(nodeName string, username string, password string) MQTT.Client {
-	opts := MQTT.NewClientOptions().AddBroker("tls://b9f3c31144f64d469f184727678d8fb6.s1.eu.hivemq.cloud:8883/mqtt")
-	opts.SetClientID(nodeName)
-	opts.SetUsername(username)
-	opts.SetPassword(password)
-	opts.SetDefaultPublishHandler(messagePubHandler)
-	client := MQTT.NewClient(opts)
-
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-
-	return client
-}
-
-func main() {
+func subscribe() {
 
 	configPath := flag.String("config", "", "Path to the configuration file")
 	connection := flag.String("connection", "hivemq", "Enter 'hivemq' or 'local' for MQTT connection")

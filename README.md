@@ -337,6 +337,32 @@ func TestQoS(t *testing.T) {
 
 ```
 
+### Integração com Metabase
+
+Para testar a integração com Metabase, basta alterar o estado do banco de dados e verificar se ela foi propagada para o dashboard. Nesse sentido, é necessário, primeiro, executar a API e o Metabase:
+
+```
+docker-compose up & python3 api.py
+```
+
+A partir daí, faça uma requisição POST à API utilizando o formato de JSON abaixo:
+
+```
+{
+	Value            float64    `json:"value"`
+	Unit             string    `json:"unit"`
+	TransmissionRate float64    `json:"transmission_rate"`
+	Longitude        float64    `json:"longitude"`
+	Latitude         float64    `json:"latitude"`
+	Sensor           string    `json:"sensor"`
+	Timestamp        time.Time `json:"timestamp"`
+	QoS			     byte      `json:"qos"`
+}
+
+```
+
+Feito isso, acesse o dashboard Monitoring na URL `localhost:3000` e verifique se esse novo dado está refletido na tabela do Metabase.
+
 ## Demo
 
 ### Funcionamento do publisher completo

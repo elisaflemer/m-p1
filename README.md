@@ -337,7 +337,7 @@ func TestQoS(t *testing.T) {
 
 ```
 
-### Integração com Metabase
+### 6. Integração com Metabase
 
 Para testar a integração com Metabase, basta alterar o estado do banco de dados e verificar se ela foi propagada para o dashboard. Nesse sentido, é necessário, primeiro, executar a API e o Metabase:
 

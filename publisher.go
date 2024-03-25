@@ -147,6 +147,8 @@ func publishData(client MQTT.Client, config Configuration, data []float64) {
 	for _, value := range data {
 		roundedValue := math.Round(value*100) / 100
 
+		fmt.Printf("Publishing: %f\n", roundedValue)
+
 		message := createJSONMessage(config, roundedValue)
 
 		token := client.Publish("sensor/"+config.Sensor, byte(config.QoS), false, message)

@@ -1,3 +1,5 @@
+https://github.com/elisaflemer/m9-p1/assets/99259251/026ee2f2-9528-44ac-b1c6-3164c45ded63
+
 # Ponderada de integração
 
 Este documento fornece uma visão geral do fluxo de dados e das conexões entre um publicador de dados em Python e um banco de dados MongoDB, intermediado por um broker MQTT (HiveMQ) e um sistema de mensagens (Kafka). O código disponibilizado faz a ponte entre o dispositivo sensorial (publicador) e o banco de dados MongoDB, permitindo a captura, processamento e armazenamento dos dados provenientes do sensor.
@@ -16,7 +18,9 @@ Este documento fornece uma visão geral do fluxo de dados e das conexões entre 
 ### Requisitos de Software
 
 - Python 3.x
-- Bibliotecas Python: paho-mqtt, confluent-kafka, pytest, pymongo
+- Bibliotecas Python: paho-mqtt, con
+
+fluent-kafka, pytest, pymongo
 
 ### Configuração do Ambiente
 

@@ -4,9 +4,11 @@ import time
 import math
 import paho.mqtt.client as paho
 from paho import mqtt
+from confluent_kafka import Producer, Consumer, KafkaError
+
 
 mock_config = {
-    "Sensor": "air",
+    "Sensor": "solar",
     "Longitude": 59.0,
     "Latitude": 55.0,
     "TransmissionRate": 10,
@@ -14,7 +16,8 @@ mock_config = {
     "QoS": 1,
 }
 
-mock_data = [1.25, 2.50, 1.25]
+mock_data = [2.25, 2.50, 4.25]
+test_message = json.dumps({"Value": 1.25, "Unit": "W/m³", "TransmissionRate": 10, "Longitude": 59.0, "Latitude": 55.0, "Sensor": "air", "Timestamp": time.time(), "QoS": 1})
 received_messages = []
 first_message_timestamp = None
 last_message_timestamp = None
@@ -25,6 +28,7 @@ topic = "hi"
 username = 'admin'
 password = 'Admin123'
 connected = False
+
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -110,3 +114,70 @@ def test_message_reception(mqtt_client):
     time.sleep(total_time)
 
     assert len(received_messages) > 0
+
+def test_kafka_integration(mqtt_client):
+    
+
+    consumer_config = {
+    "bootstrap.servers":"pkc-rgm37.us-west-2.aws.confluent.cloud:9092",
+    'security.protocol':"SASL_SSL",
+    'sasl.mechanisms':'PLAIN',
+    'sasl.username':'VSCWFUOLUOZZ2GME',
+    'sasl.password':'jjdma8p/cWZks17T2fh9ZyDPKNsOf297oWvRm+RvIHg++J52/uYc6LfIrq/mF5Zq',
+    'group.id': 'python-consumer-group',
+    'auto.offset.reset': 'earliest'
+
+}
+    topic = 'sensor'
+    consumer = Consumer(**consumer_config)
+
+    consumer.subscribe([topic])
+
+    time.sleep(2)
+
+    print('publishing message')
+    print(test_message)
+    mqtt_client.publish(f"sensor/solar", payload=test_message, qos=1)
+
+    # Consumir mensagens
+    try:
+        while True:
+            msg = consumer.poll(timeout=1.0)
+            if msg is None:
+                continue
+            if msg.error():
+                if msg.error().code() == KafkaError._PARTITION_EOF:
+                    continue
+                else:
+                    print(msg.error())
+                    break
+            print(f'Received message: {msg.value().decode("utf-8")}')
+            received_value = json.loads(msg.value().decode("utf-8"))['Value']
+            desired_value = json.loads(test_message)['Value']
+            print(received_value, desired_value)
+            if received_value == desired_value:
+                assert True
+                break
+                
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        # Fechar consumidor
+        consumer.close()
+
+def test_mongodb_integration(mqtt_client):
+    from pymongo import MongoClient
+    from pymongo.server_api import ServerApi
+
+    mqtt_client.publish(f"sensor/solar", payload=test_message, qos=1)
+    uri = "mongodb+srv://admin:admin@sensor.fzgi4a5.mongodb.net/?retryWrites=true&w=majority&appName=sensor"
+# Create a new client and connect to the server
+    client = MongoClient(uri, server_api=ServerApi('1'))
+    db = client['sensor']
+    collection = db['reading']
+    # find document by timestamp
+    doc = collection.find().sort('_id',-1).limit(1)
+    doc = list(doc)[0]
+    print(doc)
+    assert doc['Value'] == json.loads(test_message)['Value']
